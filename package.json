@@ -1,0 +1,191 @@
+{
+  "name": "vscode-project-tree-highlighter",
+  "publisher": "abduwaly-cmd",
+  "displayName": "Workspace Tree File Highlighter",
+  "description": "Highlight your files and folders with ease using a context menu. Customize colors and badges via a color picker and instantly preview highlights in the Explorer and editor tabs.",
+  "version": "0.0.1",
+  "icon": "images/icon.png",
+  "engines": {
+    "vscode": "^1.98.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "highlighter.enable",
+        "title": "Enable Tree Highlight",
+        "category": "Workspace Highlight"
+      },
+      {
+        "command": "highlighter.disable",
+        "title": "Disable Tree Highlight",
+        "category": "Workspace Highlight"
+      },
+      {
+        "command": "highlighter.customize",
+        "title": "Custom Highlight",
+        "category": "Workspace Highlight"
+      }
+    ],
+    "commandPalette": [
+      {
+        "command": "highlighter.enable",
+        "when": "!highlighter.enabled"
+      },
+      {
+        "command": "highlighter.disable",
+        "when": "highlighter.enabled"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "highlighter.customize",
+          "when": "highlighter.enabled",
+          "group": "0_highlighter"
+        }
+      ]
+    },
+    "colors": [
+      {
+        "id": "highlighter.red",
+        "defaults": { "light": "#e06c75", "dark": "#e06c75", "highContrast": "#ff0000" },
+        "description": "Highlighter Red"
+      },
+      {
+        "id": "highlighter.orange",
+        "defaults": { "light": "#d19a66", "dark": "#d19a66", "highContrast": "#ff8c00" },
+        "description": "Highlighter Orange"
+      },
+      {
+        "id": "highlighter.yellow",
+        "defaults": { "light": "#e5c07b", "dark": "#e5c07b", "highContrast": "#ffff00" },
+        "description": "Highlighter Yellow"
+      },
+      {
+        "id": "highlighter.green",
+        "defaults": { "light": "#98c379", "dark": "#98c379", "highContrast": "#00ff00" },
+        "description": "Highlighter Green"
+      },
+      {
+        "id": "highlighter.teal",
+        "defaults": { "light": "#56b6c2", "dark": "#56b6c2", "highContrast": "#00ced1" },
+        "description": "Highlighter Teal"
+      },
+      {
+        "id": "highlighter.blue",
+        "defaults": { "light": "#61afef", "dark": "#61afef", "highContrast": "#0000ff" },
+        "description": "Highlighter Blue"
+      },
+      {
+        "id": "highlighter.indigo",
+        "defaults": { "light": "#5c5cff", "dark": "#5c5cff", "highContrast": "#4b0082" },
+        "description": "Highlighter Indigo"
+      },
+      {
+        "id": "highlighter.purple",
+        "defaults": { "light": "#c678dd", "dark": "#c678dd", "highContrast": "#800080" },
+        "description": "Highlighter Purple"
+      },
+      {
+        "id": "highlighter.pink",
+        "defaults": { "light": "#ff69b4", "dark": "#ff69b4", "highContrast": "#ff69b4" },
+        "description": "Highlighter Pink"
+      },
+      {
+        "id": "highlighter.brown",
+        "defaults": { "light": "#a6784d", "dark": "#a6784d", "highContrast": "#8b4513" },
+        "description": "Highlighter Brown"
+      },
+      {
+        "id": "highlighter.gray",
+        "defaults": { "light": "#abb2bf", "dark": "#abb2bf", "highContrast": "#a9a9a9" },
+        "description": "Highlighter Gray"
+      },
+      {
+        "id": "highlighter.black",
+        "defaults": { "light": "#333333", "dark": "#333333", "highContrast": "#000000" },
+        "description": "Highlighter Black"
+      },
+      {
+        "id": "highlighter.white",
+        "defaults": { "light": "#eeeeee", "dark": "#eeeeee", "highContrast": "#ffffff" },
+        "description": "Highlighter White"
+      },
+      {
+        "id": "highlighter.gold",
+        "defaults": { "light": "#ffd700", "dark": "#ffd700", "highContrast": "#ffd700" },
+        "description": "Highlighter Gold"
+      },
+      {
+        "id": "highlighter.cyan",
+        "defaults": { "light": "#00ffff", "dark": "#00ffff", "highContrast": "#00ffff" },
+        "description": "Highlighter Cyan"
+      },
+      {
+        "id": "highlighter.lime",
+        "defaults": { "light": "#b4f000", "dark": "#b4f000", "highContrast": "#00ff00" },
+        "description": "Highlighter Lime"
+      },
+      {
+        "id": "highlighter.rose",
+        "defaults": { "light": "#ff007f", "dark": "#ff007f", "highContrast": "#ff007f" },
+        "description": "Highlighter Rose"
+      },
+      {
+        "id": "highlighter.sky",
+        "defaults": { "light": "#87ceeb", "dark": "#87ceeb", "highContrast": "#87ceeb" },
+        "description": "Highlighter Sky Blue"
+      },
+      {
+        "id": "highlighter.violet",
+        "defaults": { "light": "#9400d3", "dark": "#9400d3", "highContrast": "#9400d3" },
+        "description": "Highlighter Violet"
+      }
+    ],
+    "configuration": {
+      "title": "Workspace Highlighter",
+      "properties": {
+        "highlighter.overrideGitDecorations": {
+          "type": "boolean",
+          "scope": "resource",
+          "default": true,
+          "description": "Disable Git decorations when the highlighter is enabled"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.98.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.28.0",
+    "@typescript-eslint/parser": "^8.28.0",
+    "eslint": "^9.23.0",
+    "typescript": "^5.8.2",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1"
+  },
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abduwaly-cmd/vscode-workspace-tree-file-highlighter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/abduwaly-cmd/vscode-workspace-tree-file-highlighter/issues"
+  }
+}
