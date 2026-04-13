@@ -3,7 +3,7 @@
   "publisher": "abduwaly-cmd",
   "displayName": "Workspace Tree File Highlighter",
   "description": "Highlight your files and folders with ease using a context menu. Customize colors and badges via a color picker and instantly preview highlights in the Explorer and editor tabs.",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.96.0"
