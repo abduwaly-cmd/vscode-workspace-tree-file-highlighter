@@ -9,7 +9,7 @@ export function setLocalContext(key: string, value: boolean) {
 }
 
 export async function setGitDecorations(enabled: boolean) {
-    if (!vscode.workspace.workspaceFolders?.length) return;
+    if (!vscode.workspace.workspaceFolders?.length) {return;}
     await vscode.workspace.getConfiguration('git').update(
         'decorations.enabled',
         enabled,
@@ -54,6 +54,12 @@ export function createStatusBar(commandId: string): vscode.StatusBarItem {
     return statusBar;
 }
 
-export function updateStatusBar(statusBar: vscode.StatusBarItem, enabled: boolean) {
-    statusBar.text = enabled ? '$(list-tree) Highlighter: On' : '$(list-tree) Highlighter: Off';
+export function updateStatusBar(statusBar: vscode.StatusBarItem, enabled: boolean, count = 0) {
+    if (enabled) {
+        statusBar.text = '$(paintcan) Highlighter: On';
+    } else {
+        statusBar.text = count > 0
+            ? `$(paintcan) Highlighter: Off (${count})`
+            : '$(paintcan) Highlighter: Off';
+    }
 }

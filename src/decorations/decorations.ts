@@ -12,22 +12,23 @@ export class HighlightDecorationProvider implements vscode.FileDecorationProvide
 
     async provideFileDecoration(uri: vscode.Uri): Promise<vscode.FileDecoration | undefined> {
         const enabled = this.context.workspaceState.get<boolean>('highlighter.enabled', true);
-        if (!enabled) return;
+        if (!enabled) {return;}
 
         // No workspace open — bail immediately to avoid errors and busy-loops
-        if (!vscode.workspace.workspaceFolders?.length) return;
+        if (!vscode.workspace.workspaceFolders?.length) {return;}
 
         // After first load this is a synchronous no-op
         await highlightStore.ensureLoaded();
 
         const highlight = highlightStore.getEffectiveHighlight(uri.fsPath);
-        if (!highlight?.color && !highlight?.badge) return;
+        if (!highlight?.color && !highlight?.badge) {return;}
 
+        const parts = [highlight.color ?? '', highlight.badge ?? ''].filter(Boolean).join(' ');
         return {
             badge: highlight.badge,
             color: highlight.color ? new vscode.ThemeColor(`highlighter.${highlight.color}`) : undefined,
-            tooltip: 'Customized Highlight',
-            propagate: false
+            tooltip: `Highlighted: ${parts}`,
+            propagate: false,
         };
     }
 
