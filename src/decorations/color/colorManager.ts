@@ -2,8 +2,10 @@ import * as vscode from 'vscode';
 import { highlightStore } from '../../store';
 import { HIGHLIGHT_COLORS } from './highlightColors';
 
-
-export async function promptForColor(uri: vscode.Uri): Promise<string | undefined> {
+/**
+ * Returns the selected color ID, undefined for "None", or null if the user cancelled.
+ */
+export async function promptForColor(uri: vscode.Uri): Promise<string | null | undefined> {
     const defaultColor = highlightStore.getEffectiveHighlight(uri.fsPath)?.color;
 
     const quickPick = vscode.window.createQuickPick();
@@ -26,22 +28,28 @@ export async function promptForColor(uri: vscode.Uri): Promise<string | undefine
     }
 
     return new Promise(resolve => {
+        let accepted = false;
+
         quickPick.onDidAccept(() => {
+            accepted = true;
             const selected = quickPick.selectedItems[0];
             let colorId: string | undefined;
 
             if (selected?.label === 'None') {
                 colorId = undefined;
             } else {
-                const match = HIGHLIGHT_COLORS.find(c => c.label === selected.label);
-                colorId = match?.id ?? defaultColor ?? 'green';
+                const match = HIGHLIGHT_COLORS.find(c => c.label === selected?.label);
+                colorId = match?.id ?? defaultColor;
             }
             quickPick.hide();
             resolve(colorId);
         });
+
         quickPick.onDidHide(() => {
-            resolve(defaultColor ?? 'green'); // fallback
+            quickPick.dispose();
+            if (!accepted) {resolve(null);} // Escape = cancel
         });
+
         quickPick.show();
     });
 }

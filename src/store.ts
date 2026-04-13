@@ -16,12 +16,23 @@ class HighlightStore {
     private _loaded = false;
     private _loadPromise?: Promise<void>;
     private _saveTimer?: NodeJS.Timeout;
+    private _changeTimer?: NodeJS.Timeout;
     /** Tracks in-flight writes so the FileSystemWatcher can ignore our own changes. */
     private _pendingWrites = 0;
     private _watcher?: vscode.FileSystemWatcher;
+    private _watcherSubs: vscode.Disposable[] = [];
+    private _onChange?: () => void;
 
     get isLoaded(): boolean {
         return this._loaded;
+    }
+
+    get size(): number {
+        return this._map.size;
+    }
+
+    setChangeHandler(fn: () => void): void {
+        this._onChange = fn;
     }
 
     /**
@@ -29,7 +40,7 @@ class HighlightStore {
      * subsequent calls are synchronous no-ops once the store is loaded.
      */
     async ensureLoaded(): Promise<void> {
-        if (this._loaded) return;
+        if (this._loaded) {return;}
         if (!this._loadPromise) {
             this._loadPromise = this._doLoad().finally(() => {
                 this._loadPromise = undefined;
@@ -43,6 +54,7 @@ class HighlightStore {
         if (!uri) {
             this._map.clear();
             this._loaded = true;
+            this._fireChange();
             return;
         }
         try {
@@ -59,6 +71,7 @@ class HighlightStore {
             this._map.clear();
         }
         this._loaded = true;
+        this._fireChange();
     }
 
     /** Mark the store stale so the next ensureLoaded() re-reads from disk. */
@@ -72,15 +85,15 @@ class HighlightStore {
      */
     getEffectiveHighlight(fsPath: string): HighlightInfo | undefined {
         const direct = this._map.get(fsPath);
-        if (direct) return direct;
+        if (direct) {return direct;}
 
         const { root } = nodePath.parse(fsPath);
         let current = nodePath.dirname(fsPath);
         while (current !== root) {
             const ancestor = this._map.get(current);
-            if (ancestor) return ancestor;
+            if (ancestor) {return ancestor;}
             const parent = nodePath.dirname(current);
-            if (parent === current) break;
+            if (parent === current) {break;}
             current = parent;
         }
         return undefined;
@@ -95,7 +108,7 @@ class HighlightStore {
     hasDescendants(dirPath: string): boolean {
         const prefix = dirPath + nodePath.sep;
         for (const key of this._map.keys()) {
-            if (key.startsWith(prefix)) return true;
+            if (key.startsWith(prefix)) {return true;}
         }
         return false;
     }
@@ -103,11 +116,13 @@ class HighlightStore {
     set(fsPath: string, info: HighlightInfo): void {
         this._map.set(fsPath, info);
         this._scheduleSave();
+        this._fireChange();
     }
 
     delete(fsPath: string): void {
         this._map.delete(fsPath);
         this._scheduleSave();
+        this._fireChange();
     }
 
     /** Removes all entries in the map that are descendants of dirPath. */
@@ -120,44 +135,92 @@ class HighlightStore {
                 changed = true;
             }
         }
-        if (changed) this._scheduleSave();
+        if (changed) {
+            this._scheduleSave();
+            this._fireChange();
+        }
+    }
+
+    /** Iterates over all direct (non-inherited) entries in the store. */
+    entries(): IterableIterator<[string, HighlightInfo]> {
+        return this._map.entries();
+    }
+
+    /** Removes all highlights. */
+    clear(): void {
+        this._map.clear();
+        this._scheduleSave();
+        this._fireChange();
     }
 
     /**
      * Watches .vscode/highlightedFiles.json for external changes (e.g. git checkout,
      * manual edits) and reloads the store when they occur.
      */
-    setupWatcher(context: vscode.ExtensionContext, onReload: () => void): void {
+    setupWatcher(context: vscode.ExtensionContext): void {
+        // Clean up previous watcher and its subscriptions
+        this._watcherSubs.forEach(d => d.dispose());
+        this._watcherSubs = [];
         this._watcher?.dispose();
+        this._watcher = undefined;
+
         const folders = vscode.workspace.workspaceFolders;
-        if (!folders?.length) return;
+        if (!folders?.length) {return;}
 
         const pattern = new vscode.RelativePattern(folders[0], '.vscode/highlightedFiles.json');
         this._watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
-        const maybeReload = () => {
+        const maybeReload = async () => {
             // Ignore events triggered by our own _persist() writes
-            if (this._pendingWrites > 0) return;
+            if (this._pendingWrites > 0) {return;}
             this.invalidate();
-            onReload();
+            await this.ensureLoaded(); // fires _onChange at end of _doLoad
         };
 
-        context.subscriptions.push(
+        this._watcherSubs = [
             this._watcher.onDidChange(maybeReload),
             this._watcher.onDidCreate(maybeReload),
             this._watcher.onDidDelete(maybeReload),
-            this._watcher
-        );
+            this._watcher,
+        ];
+
+        // Register with context so they're cleaned up on deactivation
+        for (const sub of this._watcherSubs) {
+            context.subscriptions.push(sub);
+        }
+    }
+
+    /** Flush any pending debounced save immediately. */
+    async flush(): Promise<void> {
+        if (this._saveTimer) {
+            clearTimeout(this._saveTimer);
+            this._saveTimer = undefined;
+            await this._persist();
+        }
+    }
+
+    dispose(): void {
+        if (this._saveTimer) {clearTimeout(this._saveTimer);}
+        if (this._changeTimer) {clearTimeout(this._changeTimer);}
+        this._watcherSubs.forEach(d => d.dispose());
+        this._watcherSubs = [];
+        this._watcher?.dispose();
+        this._watcher = undefined;
     }
 
     private _scheduleSave(): void {
-        if (this._saveTimer) clearTimeout(this._saveTimer);
+        if (this._saveTimer) {clearTimeout(this._saveTimer);}
         this._saveTimer = setTimeout(() => this._persist(), 200);
+    }
+
+    private _fireChange(): void {
+        if (this._changeTimer) {clearTimeout(this._changeTimer);}
+        this._changeTimer = setTimeout(() => this._onChange?.(), 10);
     }
 
     private async _persist(): Promise<void> {
         const uri = getHighlightFileUri();
-        if (!uri) return;
+        if (!uri) {return;}
 
         this._pendingWrites++;
         try {
@@ -183,7 +246,7 @@ class HighlightStore {
 /** Returns the URI for highlightedFiles.json, or undefined when no workspace is open. */
 export function getHighlightFileUri(): vscode.Uri | undefined {
     const folders = vscode.workspace.workspaceFolders;
-    if (!folders?.length) return undefined;
+    if (!folders?.length) {return undefined;}
     return vscode.Uri.joinPath(folders[0].uri, '.vscode', 'highlightedFiles.json');
 }
 
