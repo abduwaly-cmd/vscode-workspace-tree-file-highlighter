@@ -29,8 +29,19 @@
       },
       {
         "command": "highlighter.customize",
-        "title": "Custom Highlight",
+        "title": "Add / Edit Highlight",
         "category": "Workspace Highlight"
+      },
+      {
+        "command": "highlighter.removeHighlight",
+        "title": "Remove Highlight",
+        "category": "Workspace Highlight"
+      },
+      {
+        "command": "highlighter.clearAll",
+        "title": "Clear All Highlights",
+        "category": "Workspace Highlight",
+        "icon": "$(trash)"
       }
     ],
     "commandPalette": [
@@ -41,14 +52,53 @@
       {
         "command": "highlighter.disable",
         "when": "highlighter.enabled"
+      },
+      {
+        "command": "highlighter.clearAll",
+        "when": "highlighter.enabled"
+      },
+      {
+        "command": "highlighter.customize",
+        "when": "false"
+      },
+      {
+        "command": "highlighter.removeHighlight",
+        "when": "false"
       }
     ],
+    "views": {
+      "explorer": [
+        {
+          "id": "highlighter.highlightsView",
+          "name": "Highlights"
+        }
+      ]
+    },
     "menus": {
       "explorer/context": [
         {
           "command": "highlighter.customize",
           "when": "highlighter.enabled",
-          "group": "0_highlighter"
+          "group": "1_modification@90"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "highlighter.clearAll",
+          "when": "view == highlighter.highlightsView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "highlighter.customize",
+          "when": "view == highlighter.highlightsView && viewItem == highlightedItem",
+          "group": "1_modification"
+        },
+        {
+          "command": "highlighter.removeHighlight",
+          "when": "view == highlighter.highlightsView && viewItem == highlightedItem",
+          "group": "1_modification"
         }
       ]
     },
